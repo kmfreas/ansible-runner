@@ -1,0 +1,63 @@
+---
+- hosts: runners
+  any_errors_fatal: true
+  gather_facts: true
+  vars:
+    ansible_user: "ubuntu"
+    ansible_ssh_port: 22
+    node_v: "16.13.0"
+  roles:
+    - role: geerlingguy.docker
+      tags: docker
+      become: yes
+    - role: ansible-role-nvm
+      nodejs_version: "{{ node_v }}"
+  tasks:
+    - name: "set hostname of server"
+      become: yes
+      hostname:
+        name: "{{ inventory_hostname }}"
+
+    - name: "add ubuntu to docker group"
+      become: yes
+      user:
+        name: "{{ ansible_user }}"
+        groups: "docker"
+        append: yes
+
+    - name: Set authorized key took from file
+      authorized_key:
+        user: "{{ ansible_user }}"
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: Add specified repository into sources list
+      become: yes
+      ansible.builtin.apt_repository:
+        repo: 'ppa:ansible/ansible'
+        state: present
+
+    - name: Update all packages to their latest version
+      become: yes
+      apt:
+        update_cache: yes
+        name: "*"
+        state: latest
+
+    - name: Install a list of packages
+      become: yes
+      apt:
+        pkg:
+          - git
+          - software-properties-common
+          - ansible
+
+    - name: Install global npm packages
+      shell: npm install -g artillery
+      environment:
+        PATH: "/home/{{ ansible_user }}/.nvm/versions/node/v{{ node_v }}/bin:{{ ansible_env.PATH }}"
+
+    - name: create project path
+      file:
+        state: directory
+        dest: "./BackendInfrastructure"
