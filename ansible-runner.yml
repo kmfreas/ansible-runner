@@ -51,6 +51,7 @@
           - git
           - software-properties-common
           - ansible
+          - jq
 
     - name: Install global npm packages
       shell: npm install -g artillery
