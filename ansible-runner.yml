@@ -8,6 +8,8 @@
     node_v: "16.13.0"
   roles:
     - role: geerlingguy.docker
+      vars:
+        docker_install_compose: false
       tags: docker
       become: yes
     - role: ansible-role-nvm
